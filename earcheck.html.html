@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ear Check</title>
+<style>
+  :root{
+    --bg:#14151A;
+    --card:#1B1D24;
+    --line:#2C2F39;
+    --ink:#E9E7E1;
+    --ink-soft:#83879A;
+    --accent:#CC9A54;
+    --good:#7FA46B;
+    --notyet:#C2705F;
+    --key-black:#0C0D10;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    min-height:100vh;
+    display:flex;justify-content:center;align-items:center;
+    padding:32px 20px;
+  }
+  .card{
+    width:100%;max-width:460px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:36px 32px;
+  }
+  @media (max-width:480px){ .card{padding:28px 20px} body{padding:20px 12px} }
+  @media (prefers-reduced-motion:no-preference){
+    .view{animation:fade .25s ease}
+    @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  }
+
+  h1{font-size:23px;font-weight:600;letter-spacing:-.01em;margin-bottom:10px}
+  p{font-size:16px;line-height:1.6;color:var(--ink-soft)}
+  p strong{color:var(--ink);font-weight:600}
+  .rules{margin-top:18px;font-size:14px;line-height:2;color:var(--ink-soft)}
+
+  button{font:inherit;cursor:pointer}
+  .btn{
+    width:100%;
+    background:var(--ink);color:var(--bg);
+    border:none;border-radius:8px;
+    font-size:15px;font-weight:600;
+    padding:14px;margin-top:28px;
+  }
+  .btn:hover{background:#fff}
+  .btn:disabled{background:var(--line);color:var(--ink-soft);cursor:not-allowed}
+  .btn:focus-visible,.key:focus-visible,.playbtn:focus-visible,.ghost:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .ghost{
+    width:100%;background:none;border:1px solid var(--line);color:var(--ink);
+    border-radius:8px;font-size:14px;font-weight:600;padding:12px;margin-top:10px;
+  }
+  .ghost:hover{border-color:var(--ink-soft)}
+
+  /* progress */
+  .progress{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-bottom:24px}
+  .progress i{display:block;height:100%;width:0%;background:var(--accent);border-radius:2px;transition:width .25s ease}
+
+  /* exam */
+  .topline{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
+  .topline span{font-size:13px;color:var(--ink-soft)}
+  .qnum{font-size:15px;font-weight:600;color:var(--ink)}
+
+  .playbox{text-align:center;padding:6px 0 4px}
+  .playbtn{
+    width:50%;
+    background:var(--accent);color:#1B1D24;border:none;border-radius:8px;
+    font-size:15px;font-weight:600;padding:14px 30px;
+  }
+  .playbtn:hover{background:#DCAE6C}
+  .playbtn:disabled{background:var(--line);color:var(--ink-soft)}
+  .listens{display:flex;gap:7px;justify-content:center;margin-top:14px}
+  .listens i{width:6px;height:6px;border-radius:50%;background:var(--line);display:block}
+  .listens i.used{background:var(--accent)}
+  .now{font-size:13px;color:var(--accent);height:16px;margin-top:12px;font-weight:500}
+
+  .kb-label{font-size:14px;color:var(--ink-soft);margin:26px 0 12px;text-align:center}
+  .kb{position:relative;height:150px;max-width:400px;margin:0 auto;user-select:none}
+  .key{
+    position:absolute;top:0;
+    display:flex;align-items:flex-end;justify-content:center;
+    font-size:13px;font-weight:600;padding-bottom:8px;
+  }
+  .key.white{
+    height:100%;width:calc(100%/7);
+    background:#EDEAE2;color:#6B6559;z-index:1;
+    border:1px solid #D8D3C6;border-radius:0 0 5px 5px;
+  }
+  .key.black{
+    height:58%;width:calc(100%/7*0.85);
+    background:var(--key-black);color:#B9BDCB;z-index:2;
+    transform:translateX(-50%);font-size:12px;
+    border:1px solid #000;border-radius:0 0 4px 4px;
+  }
+  .key.white:hover{background:#F7F5EF}
+  .key.black:hover{background:#1B1D24}
+  .key.selected{background:var(--accent) !important;color:#1B1D24 !important;border-color:var(--accent)}
+
+  /* results */
+  .score{text-align:center;margin:4px 0 2px}
+  .score .big{font-size:56px;font-weight:700;letter-spacing:-.02em}
+  .score .of{font-size:20px;color:var(--ink-soft);font-weight:500}
+  .verdict{text-align:center;font-size:17px;font-weight:600;margin-top:8px}
+  .verdict.in{color:var(--good)}
+  .verdict.notyet{color:var(--notyet)}
+  .subverdict{text-align:center;font-size:14px;color:var(--ink-soft);margin-top:6px}
+
+  table{width:100%;border-collapse:collapse;margin-top:26px;font-size:13px}
+  th{
+    text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--ink-soft);font-weight:600;border-bottom:1px solid var(--line);padding:6px 4px;
+  }
+  td{border-bottom:1px solid var(--line);padding:8px 4px;color:var(--ink)}
+  td.mark{width:24px;text-align:center;font-weight:700}
+  .mark.ok{color:var(--good)}
+  .mark.bad{color:var(--notyet)}
+
+  .share{margin-top:24px}
+  .share input{
+    width:100%;font-family:ui-monospace,monospace;font-size:12px;
+    padding:11px;border:1px solid var(--line);border-radius:8px;
+    background:#0F1015;color:var(--ink-soft);margin-top:12px;
+  }
+  .copied{font-size:12px;color:var(--good);font-weight:600;height:14px;margin-top:8px;text-align:center}
+
+  .hidden{display:none}
+</style>
+</head>
+<body>
+
+  <!-- INTRO -->
+  <div id="viewIntro" class="view card">
+    <h1>Ear check</h1>
+    <p>The test is 11 rounds. Each round starts with a <strong>C</strong>, then another note. Name the second note.</p>
+    <div class="rules">Up to 3 listens per round · headphones recommended</div>
+    <button class="btn" id="btnStart">Start</button>
+  </div>
+
+  <!-- EXAM -->
+  <div id="viewExam" class="view card hidden">
+    <div class="progress"><i id="progressFill"></i></div>
+    <div class="topline">
+      <span>Ear check</span>
+      <span class="qnum" id="qnum">1 / 11</span>
+    </div>
+
+    <div class="playbox">
+      <button class="playbtn" id="btnPlay">Play</button>
+      <div class="listens" id="listenDots"><i></i><i></i><i></i></div>
+      <div class="now" id="nowPlaying"></div>
+    </div>
+
+    <div class="kb-label">Which note?</div>
+    <div class="kb" id="kb" role="group" aria-label="Answer keyboard, one octave"></div>
+
+    <button class="btn" id="btnConfirm" disabled>Confirm</button>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="viewResults" class="view card hidden">
+    <h1 id="resTitle">Result</h1>
+    <div class="score">
+      <span class="big" id="scoreBig">0</span><span class="of"> / 11</span>
+    </div>
+    <div class="verdict" id="verdict"></div>
+    <div class="subverdict" id="subverdict"></div>
+
+    <table>
+      <thead><tr><th>#</th><th>Played</th><th>Answer</th><th></th></tr></thead>
+      <tbody id="resRows"></tbody>
+    </table>
+
+    <div class="share" id="shareBox">
+      <input type="text" id="shareUrl" readonly onclick="this.select()">
+      <button class="ghost" id="btnCopy">Copy link</button>
+      <div class="copied" id="copiedMsg"></div>
+    </div>
+
+    <button class="btn" id="btnRetake">Try again</button>
+  </div>
+
+<script>
+(function(){
+  const NOTES=["C","C♯","D","D♯","E","F","F♯","G","G♯","A","A♯","B"];
+  const BLACK=[1,3,6,8,10];
+  const C4=261.6256;
+  const freq=i=>C4*Math.pow(2,i/12);
+
+  let ctx=null;
+  function audio(){ if(!ctx) ctx=new (window.AudioContext||window.webkitAudioContext)(); if(ctx.state==="suspended") ctx.resume(); return ctx; }
+  function tone(semitone,when,dur){
+    const ac=audio(), t=ac.currentTime+when;
+    const master=ac.createGain(); master.connect(ac.destination);
+    master.gain.setValueAtTime(0,t);
+    master.gain.linearRampToValueAtTime(0.5,t+0.02);
+    master.gain.setValueAtTime(0.5,t+dur-0.25);
+    master.gain.exponentialRampToValueAtTime(0.001,t+dur);
+    [[1,0.6],[2,0.22],[3,0.10],[4,0.05]].forEach(([h,g])=>{
+      const o=ac.createOscillator(), og=ac.createGain();
+      o.type="sine"; o.frequency.value=freq(semitone)*h;
+      og.gain.value=g; o.connect(og); og.connect(master);
+      o.start(t); o.stop(t+dur);
+    });
+  }
+  function playExercise(target,onLabel,onDone){
+    audio();
+    tone(0,0.05,1.0);
+    tone(target,1.35,1.0);
+    onLabel("C");
+    setTimeout(()=>onLabel("···"),1300);
+    setTimeout(onDone,2500);
+  }
+
+  let order=[], qi=0, answers=[], listens=0, selected=null, playing=false;
+
+  const $=id=>document.getElementById(id);
+  const views={intro:$("viewIntro"),exam:$("viewExam"),results:$("viewResults")};
+  function show(v){ Object.values(views).forEach(x=>x.classList.add("hidden")); views[v].classList.remove("hidden"); }
+
+  const WHITE=[0,2,4,5,7,9,11];
+  function buildKeyboard(){
+    const kb=$("kb"); kb.innerHTML="";
+    WHITE.forEach((s,i)=>{
+      const b=document.createElement("button");
+      b.className="key white"; b.textContent=NOTES[s];
+      b.style.left=(i*100/7)+"%"; b.dataset.s=s;
+      b.setAttribute("aria-label",NOTES[s]);
+      kb.appendChild(b);
+    });
+    BLACK.forEach(s=>{
+      const wi=WHITE.filter(w=>w<s).length;
+      const b=document.createElement("button");
+      b.className="key black"; b.textContent=NOTES[s];
+      b.style.left=(wi*100/7)+"%"; b.dataset.s=s;
+      b.setAttribute("aria-label",NOTES[s]);
+      kb.appendChild(b);
+    });
+    kb.addEventListener("click",e=>{
+      const k=e.target.closest(".key"); if(!k||playing) return;
+      selected=+k.dataset.s;
+      kb.querySelectorAll(".key").forEach(x=>x.classList.remove("selected"));
+      k.classList.add("selected");
+      $("btnConfirm").disabled=false;
+      $("btnConfirm").textContent="Confirm "+NOTES[selected];
+    });
+  }
+
+  function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+  function startExam(){
+    order=shuffle([...Array(11).keys()].map(i=>i+1)); // C♯ through B (1-11, skip C)
+    qi=0; answers=[];
+    show("exam"); loadQuestion();
+  }
+
+  function loadQuestion(){
+    listens=0; selected=null;
+    $("qnum").textContent=(qi+1)+" / 11";
+    $("progressFill").style.width=((qi)/11*100)+"%";
+    $("btnConfirm").disabled=true;
+    $("btnConfirm").textContent="Confirm";
+    $("btnPlay").disabled=false;
+    $("nowPlaying").textContent="";
+    document.querySelectorAll("#kb .key").forEach(k=>k.classList.remove("selected"));
+    updateDots();
+  }
+  function updateDots(){
+    const dots=$("listenDots").children;
+    for(let i=0;i<3;i++) dots[i].className=i<listens?"used":"";
+  }
+
+  $("btnPlay").addEventListener("click",()=>{
+    if(playing||listens>=3) return;
+    playing=true; listens++; updateDots();
+    $("btnPlay").disabled=true;
+    playExercise(order[qi],
+      txt=>$("nowPlaying").textContent=txt,
+      ()=>{ playing=false; $("nowPlaying").textContent="";
+            $("btnPlay").disabled=listens>=3; });
+  });
+
+  $("btnConfirm").addEventListener("click",()=>{
+    if(selected===null) return;
+    answers.push(selected);
+    qi++;
+    if(qi<11) loadQuestion();
+    else finish();
+  });
+
+  function encodeResult(){ return btoa(order.join(",")+"|"+answers.join(",")); }
+  function decodeResult(h){
+    try{
+      const [o,a]=atob(h).split("|").map(s=>s.split(",").map(Number));
+      if(o.length===11&&a.length===11&&o.every(n=>n>=1&&n<12)&&a.every(n=>n>=1&&n<12)) return {o,a};
+    }catch(e){}
+    return null;
+  }
+  function renderResults(o,a,shareable){
+    let score=0;
+    const rows=$("resRows"); rows.innerHTML="";
+    o.forEach((t,i)=>{
+      const ok=a[i]===t; if(ok) score++;
+      const tr=document.createElement("tr");
+      tr.innerHTML="<td>"+(i+1)+"</td><td>"+NOTES[t]+"</td><td>"+NOTES[a[i]]+"</td>"+
+        "<td class='mark "+(ok?"ok":"bad")+"'>"+(ok?"✓":"✗")+"</td>";
+      rows.appendChild(tr);
+    });
+    $("scoreBig").textContent=score;
+    const v=$("verdict"), sv=$("subverdict");
+    if(score>=10){
+      v.textContent="Great ear!"; v.className="verdict in";
+      sv.textContent=score===11 ? "Perfect score." : "You're in.";
+    }else{
+      v.textContent="Not ready yet."; v.className="verdict notyet";
+      sv.textContent="Keep training and try again soon.";
+    }
+    $("resTitle").textContent=shareable?"Result":"Shared result";
+    if(shareable){
+      const url=location.href.split("#")[0]+"#r="+encodeResult();
+      $("shareUrl").value=url;
+      try{ history.replaceState(null,"","#r="+encodeResult()); }catch(e){}
+      $("shareBox").classList.remove("hidden");
+    }else{
+      $("shareBox").classList.add("hidden");
+    }
+    show("results");
+  }
+  function finish(){ renderResults(order,answers,true); }
+
+  $("btnCopy").addEventListener("click",()=>{
+    const url=$("shareUrl").value;
+    const done=()=>{ $("copiedMsg").textContent="Copied"; setTimeout(()=>$("copiedMsg").textContent="",2000); };
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(url).then(done).catch(()=>{ $("shareUrl").select(); document.execCommand("copy"); done(); });
+    }else{ $("shareUrl").select(); document.execCommand("copy"); done(); }
+  });
+
+  $("btnRetake").addEventListener("click",()=>{
+    try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){}
+    startExam();
+  });
+  $("btnStart").addEventListener("click",()=>{ audio(); startExam(); });
+
+  buildKeyboard();
+  const m=location.hash.match(/#r=(.+)/);
+  if(m){
+    const d=decodeResult(m[1]);
+    if(d){ renderResults(d.o,d.a,false); return; }
+  }
+  show("intro");
+})();
+</script>
+</body>
+</html>
